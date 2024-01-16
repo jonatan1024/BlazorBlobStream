@@ -1,6 +1,9 @@
 # BlazorBlobStream
 A seekable File stream for Blazor.
 
+[![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/BlazorBlobStream)](https://www.nuget.org/packages/BlazorBlobStream)
+[![GitHub license](https://img.shields.io/github/license/jonatan1024/BlazorBlobStream)](https://github.com/jonatan1024/BlazorBlobStream/blob/master/LICENSE.md)
+
 This is an alternative implementation of `Microsoft.AspNetCore.Components.Forms.IBrowserFile`.
 The stream returned by `OpenReadStream` now supports setting the `Position` property and calling the `Seek` method.
 
