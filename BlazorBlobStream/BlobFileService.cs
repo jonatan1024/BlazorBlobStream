@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 
 namespace BlazorBlobStream
@@ -11,13 +12,17 @@ namespace BlazorBlobStream
             _interopTask = jsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorBlobStream/jsInterop.js").AsTask();
         }
 
-        public async ValueTask<IReadOnlyList<IBrowserFile>> GetBlobFiles(InputFile inputFile) {
+        public ValueTask<IReadOnlyList<IBrowserFile>> GetBlobFiles(InputFile inputFile)
+            => GetBlobFiles(inputFile.Element!.Value);
+
+        public async ValueTask<IReadOnlyList<IBrowserFile>> GetBlobFiles(ElementReference inputFileElement)
+        {
             var interop = await _interopTask;
-            var blobFiles = await interop.InvokeAsync<IReadOnlyList<BlobFile>>("getFileInfo", inputFile.Element);
+            var blobFiles = await interop.InvokeAsync<IReadOnlyList<BlobFile>>("getFileInfo", inputFileElement);
             foreach (var blobFile in blobFiles)
             {
                 blobFile.ModuleInterop = interop;
-                blobFile.FileElement = inputFile.Element!.Value;
+                blobFile.FileElement = inputFileElement;
             }
             return blobFiles;
         }
@@ -26,7 +31,7 @@ namespace BlazorBlobStream
         {
             if (_interopTask.Status == TaskStatus.RanToCompletion)
                 await _interopTask.Result.DisposeAsync();
-            
+
             _interopTask.Dispose();
         }
     }
