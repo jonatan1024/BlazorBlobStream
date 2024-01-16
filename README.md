@@ -18,6 +18,11 @@ This implementation uses blob-slicing to support seeking in Blazor.
 ## Usage
 To get seekable file streams, you just have to:
 
+0. Install this NuGet package:
+```
+dotnet add package BlazorBlobStream
+```
+
 1. Register the `BlobFileService` in `Program.cs`:
 ```csharp
 using BlazorBlobStream;
