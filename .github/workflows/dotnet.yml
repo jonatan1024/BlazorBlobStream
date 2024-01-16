@@ -24,4 +24,7 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
-      
+    - name: Login to GitHub NuGet repository
+      run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/jonatan1024/index.json"
+    - name: Push to GitHub NuGet repository
+      run: dotnet nuget push bin/Release/*.nupkg --source "github"
