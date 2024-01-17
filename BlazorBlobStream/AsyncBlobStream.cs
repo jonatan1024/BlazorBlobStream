@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 
 namespace BlazorBlobStream
 {
-    internal class BlobStream : Stream, IDisposable
+    internal class AsyncBlobStream : Stream, IAsyncDisposable
     {
         readonly IJSObjectReference _moduleInterop;
         readonly ElementReference _fileElement;
@@ -26,7 +26,7 @@ namespace BlazorBlobStream
 
         public override long Position { get => _position; set => Seek(value, SeekOrigin.Begin); }
 
-        public BlobStream(IJSObjectReference moduleInterop, ElementReference fileElement, int fileIndex, long size)
+        public AsyncBlobStream(IJSObjectReference moduleInterop, ElementReference fileElement, int fileIndex, long size)
         {
             _moduleInterop = moduleInterop;
             _fileElement = fileElement;
@@ -39,7 +39,9 @@ namespace BlazorBlobStream
 
         void StartStreamTask()
         {
-            ClearStream();
+            _getStreamCTS?.Cancel(throwOnFirstException: false);
+            _getStreamTask?.Dispose();
+            _getStreamCTS?.Dispose();
 
             _getStreamCTS = new CancellationTokenSource();
             _getStreamTask = GetStreamAsync(_getStreamCTS.Token);
@@ -47,23 +49,11 @@ namespace BlazorBlobStream
 
         async Task GetStreamAsync(CancellationToken cancellationToken = default)
         {
+            _innerStream?.Dispose();
+            await (_jsStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+
             _jsStream = await _moduleInterop.InvokeAsync<IJSStreamReference>("getFileSlice", cancellationToken, _fileElement, _fileIndex, _position);
             _innerStream = await _jsStream.OpenReadStreamAsync(maxAllowedSize: _size, cancellationToken);
-        }
-
-        void ClearStream()
-        {
-            _getStreamCTS?.Cancel(throwOnFirstException: false);
-
-            _innerStream?.Dispose();
-            _jsStream?.DisposeAsync();
-            _getStreamTask?.Dispose();
-            _getStreamCTS?.Dispose();
-
-            _innerStream = default;
-            _jsStream = default;
-            _getStreamTask = default;
-            _getStreamCTS = default;
         }
 
         public override void Flush() => throw new InvalidOperationException();
@@ -103,9 +93,20 @@ namespace BlazorBlobStream
 
         public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
 
-        protected override void Dispose(bool disposing)
+        public override async ValueTask DisposeAsync()
         {
-            ClearStream();
+            _getStreamCTS?.Cancel(throwOnFirstException: false);
+            _getStreamTask?.Dispose();
+            _getStreamCTS?.Dispose();
+
+            _getStreamTask = default;
+            _getStreamCTS = default;
+
+            _innerStream?.Dispose();
+            await (_jsStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+
+            _innerStream = default;
+            _jsStream = default;
         }
     }
 }

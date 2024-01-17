@@ -23,16 +23,16 @@ To get seekable file streams, you just have to:
 dotnet add package BlazorBlobStream
 ```
 
-1. Register the `BlobFileService` in `Program.cs`:
+1. Register the `BlobStreamService` in `Program.cs`:
 ```csharp
 using BlazorBlobStream;
 ...
-builder.Services.AddTransient<BlobFileService>();
+builder.Services.AddTransient<BlobStreamService>();
 ```
 
-2. Inject and call the `BlobFileService` in razor page:
+2. Inject and call the `BlobStreamService` in razor page:
 ```razor
-@inject BlazorBlobStream.BlobFileService BlobFileService
+@inject BlazorBlobStream.BlobStreamService BlobStreamService
 
 <InputFile @ref="inputFile" OnChange="OnFileChange"/>
 
@@ -41,9 +41,9 @@ builder.Services.AddTransient<BlobFileService>();
 
     async Task OnFileChange(InputFileChangeEventArgs fileChange)
     {
-        var blobFiles = await BlobFileService.GetBlobFiles(inputFile);
-        var blobFile = blobFiles.First();
-        using var fileStream = blobFile.OpenReadStream(maxAllowedSize: blobFile.Size);
+        var browserFiles = await BlobStreamService.GetBrowserFilesAsync(inputFile);
+        var browserFile = browserFiles.First();
+        await using var fileStream = browserFile.OpenReadStream(maxAllowedSize: browserFile.Size);
     }
 }
 ```

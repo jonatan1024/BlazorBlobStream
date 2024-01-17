@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace BlazorBlobStream
 {
-    internal class BlobFile : IBrowserFile
+    internal class BrowserFile : IBrowserFile
     {
         public string Name { get; set; } = default!;
 
@@ -24,7 +24,7 @@ namespace BlazorBlobStream
             if (maxAllowedSize < Size)
                 throw new InvalidOperationException($"Please increase {nameof(maxAllowedSize)} to at least {Size}");
 
-            return new BlobStream(ModuleInterop, FileElement, Index, Size);
+            return new AsyncBlobStream(ModuleInterop, FileElement, Index, Size);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject BlazorBlobStream.BlobFileService BlobFileService
+@inject BlazorBlobStream.BlobStreamService BlobStreamService
 
 
 <PageTitle>Home</PageTitle>
@@ -18,12 +18,12 @@
 
     async Task OnFileChange(InputFileChangeEventArgs fileChange)
     {
-        var blobFiles = await BlobFileService.GetBlobFiles(inputFile);
-        var blobFile = blobFiles.First();
-        using var fileStream = blobFile.OpenReadStream(maxAllowedSize: blobFile.Size);
-        byte[] buffer = new byte[1]; ;
+        var browserFiles = await BlobStreamService.GetBrowserFilesAsync(inputFile);
+        var browserFile = browserFiles.First();
+        await using var fileStream = browserFile.OpenReadStream(maxAllowedSize: browserFile.Size);
+        byte[] buffer = new byte[1];
 
-        fileStream.Seek(-1, SeekOrigin.End);        
+        fileStream.Seek(-1, SeekOrigin.End);
         await fileStream.ReadAsync(buffer, 0, 1);
         lastByte = buffer[0];
 
