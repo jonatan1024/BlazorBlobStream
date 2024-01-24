@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace BlazorBlobStream
 {
-    internal class BrowserFile : IBrowserFile
+    public class BrowserFile : IBrowserFile
     {
         public string Name { get; set; } = default!;
 
