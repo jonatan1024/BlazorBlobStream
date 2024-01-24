@@ -24,10 +24,8 @@ namespace BlazorBlobStream
 
             var blobFiles = await interop.InvokeAsync<IReadOnlyList<BrowserFile>>("getFileInfo", cancellationToken, inputFileElement);
             foreach (var blobFile in blobFiles)
-            {
-                blobFile.ModuleInterop = interop;
-                blobFile.FileElement = inputFileElement;
-            }
+                blobFile.LazyFileTask = new(async () => await interop.InvokeAsync<IJSObjectReference>("getFile", cancellationToken, inputFileElement, blobFile.Index));
+
             return blobFiles;
         }
 
@@ -35,9 +33,12 @@ namespace BlazorBlobStream
         {
             _interopCTS.Cancel(throwOnFirstException: false);
 
-            if (_interopTask.Status == TaskStatus.RanToCompletion)
-                await _interopTask.Result.DisposeAsync();
-            _interopTask.Dispose();
+            if (_interopTask.IsCompleted)
+            {
+                if(_interopTask.IsCompletedSuccessfully)
+                    await _interopTask.Result.DisposeAsync();
+                _interopTask.Dispose();
+            }
 
             _interopCTS.Dispose();
         }

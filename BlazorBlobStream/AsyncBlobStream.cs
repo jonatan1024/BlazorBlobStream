@@ -3,11 +3,9 @@ using Microsoft.JSInterop;
 
 namespace BlazorBlobStream
 {
-    internal class AsyncBlobStream : Stream, IAsyncDisposable
+    public class AsyncBlobStream : Stream, IAsyncDisposable
     {
-        readonly IJSObjectReference _moduleInterop;
-        readonly ElementReference _fileElement;
-        readonly int _fileIndex;
+        readonly Lazy<Task<IJSObjectReference>> _lazyFileTask;
         readonly long _size;
         long _position;
 
@@ -26,11 +24,9 @@ namespace BlazorBlobStream
 
         public override long Position { get => _position; set => Seek(value, SeekOrigin.Begin); }
 
-        public AsyncBlobStream(IJSObjectReference moduleInterop, ElementReference fileElement, int fileIndex, long size)
+        public AsyncBlobStream(Lazy<Task<IJSObjectReference>> lazyFileTask, long size)
         {
-            _moduleInterop = moduleInterop;
-            _fileElement = fileElement;
-            _fileIndex = fileIndex;
+            _lazyFileTask = lazyFileTask;
             _size = size;
             _position = 0;
 
@@ -40,7 +36,8 @@ namespace BlazorBlobStream
         void StartStreamTask()
         {
             _getStreamCTS?.Cancel(throwOnFirstException: false);
-            _getStreamTask?.Dispose();
+            if(_getStreamTask?.IsCompleted == true)
+                _getStreamTask?.Dispose();
             _getStreamCTS?.Dispose();
 
             _getStreamCTS = new CancellationTokenSource();
@@ -52,7 +49,8 @@ namespace BlazorBlobStream
             _innerStream?.Dispose();
             await (_jsStream?.DisposeAsync() ?? ValueTask.CompletedTask);
 
-            _jsStream = await _moduleInterop.InvokeAsync<IJSStreamReference>("getFileSlice", cancellationToken, _fileElement, _fileIndex, _position);
+            var file = await _lazyFileTask.Value;
+            _jsStream = await file.InvokeAsync<IJSStreamReference>("slice", cancellationToken, _position);
             _innerStream = await _jsStream.OpenReadStreamAsync(maxAllowedSize: _size, cancellationToken);
         }
 
@@ -96,14 +94,23 @@ namespace BlazorBlobStream
         public override async ValueTask DisposeAsync()
         {
             _getStreamCTS?.Cancel(throwOnFirstException: false);
-            _getStreamTask?.Dispose();
+            if (_getStreamTask?.IsCompleted == true)
+                _getStreamTask?.Dispose();
             _getStreamCTS?.Dispose();
 
             _getStreamTask = default;
             _getStreamCTS = default;
 
             _innerStream?.Dispose();
-            await (_jsStream?.DisposeAsync() ?? ValueTask.CompletedTask);
+
+            if (_jsStream != null)
+                await _jsStream.DisposeAsync();
+
+            if (_lazyFileTask.IsValueCreated && _lazyFileTask.Value.IsCompleted) {
+                if (_lazyFileTask.Value.IsCompletedSuccessfully)
+                    await _lazyFileTask.Value.Result.DisposeAsync();
+                _lazyFileTask.Value.Dispose();
+            }
 
             _innerStream = default;
             _jsStream = default;

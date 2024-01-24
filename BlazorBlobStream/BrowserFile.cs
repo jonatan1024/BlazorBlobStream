@@ -16,15 +16,14 @@ namespace BlazorBlobStream
 
         public int Index { get; set; }
 
-        public IJSObjectReference ModuleInterop { get; set; } = default!;
-        public ElementReference FileElement { get; set; } = default!;
+        public Lazy<Task<IJSObjectReference>> LazyFileTask { get; set; } = default!;
 
         public Stream OpenReadStream(long maxAllowedSize = 512000, CancellationToken cancellationToken = default)
         {
             if (maxAllowedSize < Size)
                 throw new InvalidOperationException($"Please increase {nameof(maxAllowedSize)} to at least {Size}");
 
-            return new AsyncBlobStream(ModuleInterop, FileElement, Index, Size);
+            return new AsyncBlobStream(LazyFileTask, Size);
         }
     }
 }

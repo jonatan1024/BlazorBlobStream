@@ -8,6 +8,6 @@ export function getFileInfo(fileInputElement) {
     }));
 }
 
-export function getFileSlice(fileInputElement, index, start) {
-    return fileInputElement.files.item(index).slice(start);
+export function getFile(fileInputElement, index) {
+    return fileInputElement.files.item(index);
 }
